@@ -4,13 +4,12 @@ from geopy.geocoders import Nominatim
 from multiprocessing import Process
 import psycopg2
 import fighter
-import time
 
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
 fighters_list = []
 
 # Connect to postgres DB
-conn = psycopg2.connect(dbname='fighters', user='fighters', password='Zone10%%')
+conn = psycopg2.connect(dbname='fighters', user='fighters', password='')
 cursor = conn.cursor()
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
 sql = """INSERT INTO fighter(name, birthplace, age, height, weight, weight_class, reach, record, latitude, longitude)

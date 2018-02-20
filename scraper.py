@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 from urllib import request
 from geopy.geocoders import Nominatim
+from multiprocessing import Process
 import psycopg2
 import fighter
+import time
 
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
 fighters_list = []
@@ -91,23 +93,32 @@ def find_fighter_info(parsed_fighter_html, weight_class_in):
 
     fighters_list.append(fighter.Fighter(name, location, age, height, weight, weight_class_in, reach, record))
 
-def main():
+def get_fighter_process(weight_class):
+    base_url = 'http://www.ufc.com//fighter/Weight_Class/filterFighters?weightClass=' + weight_class + '&fighterFilter=Current'
+    html_document = get_webpage(base_url)
+    soup = BeautifulSoup(html_document, 'html.parser')
 
-    for weight_class in weight_classes:
-        base_url = 'http://www.ufc.com//fighter/Weight_Class/filterFighters?weightClass=' + weight_class + '&fighterFilter=Current'
-        html_document = get_webpage(base_url)
-        soup = BeautifulSoup(html_document, 'html.parser')
-
-        if soup.find(class_='pagination'):
-            for page in soup.find(class_='pagination').find_all('a'):
-                page_url = 'http://www.ufc.com/' + page.get('href')
-                temp_doc = get_webpage(page_url)
-                temp_doc_soup = BeautifulSoup(temp_doc, 'html.parser')
-                find_fighter_page(temp_doc_soup, weight_class)
-        else:
+    if soup.find(class_='pagination'):
+        for page in soup.find(class_='pagination').find_all('a'):
+            page_url = 'http://www.ufc.com/' + page.get('href')
             temp_doc = get_webpage(page_url)
             temp_doc_soup = BeautifulSoup(temp_doc, 'html.parser')
             find_fighter_page(temp_doc_soup, weight_class)
+    else:
+        temp_doc = get_webpage(page_url)
+        temp_doc_soup = BeautifulSoup(temp_doc, 'html.parser')
+        find_fighter_page(temp_doc_soup, weight_class)
+
+def main():
+    procs = []
+
+    for weight_class in weight_classes:
+        proc = Process(target=get_fighter_process, args=(weight_class,))
+        procs.append(proc)
+        proc.start()
+
+    for proc in procs:
+        proc.join()
 
     for fighter in fighters_list:
         write_fighter_to_db(conn, cursor, fighter)

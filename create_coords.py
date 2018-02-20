@@ -5,7 +5,7 @@ import psycopg2
 def main():
     conn = psycopg2.connect(dbname='fighters', user='fighters', password='Zone10%%')
     cursor = conn.cursor()
-    get_sql = 'SELECT * FROM fighter;'
+    get_sql = """SELECT * FROM fighter WHERE latitude = '0' and longitude = '0';"""
     update_sql = """
                 UPDATE fighter
                 SET latitude = %s, longitude = %s

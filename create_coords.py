@@ -3,7 +3,7 @@ import fighter
 import psycopg2
 
 def main():
-    conn = psycopg2.connect(dbname='fighters', user='fighters', password='Zone10%%')
+    conn = psycopg2.connect(dbname='fighters', user='fighters', password='')
     cursor = conn.cursor()
     get_sql = """SELECT * FROM fighter WHERE latitude = '0' and longitude = '0';"""
     update_sql = """

@@ -2,8 +2,15 @@ from geopy.geocoders import Nominatim
 import fighter
 import psycopg2
 
+# Create a parsed config object referencing your config 
+config = ConfigParse('config.ini')
+database_name = config.ConfigSectionMap('database_info')['database_name']
+database_user = config.ConfigSectionMap('database_info')['username']
+database_pw = config.ConfigSectionMap('database_info')['password']
+
 def main():
-    conn = psycopg2.connect(dbname='fighters', user='fighters', password='')
+
+    conn = psycopg2.connect(dbname=database_name, user=database_user, password=database_pw)
     cursor = conn.cursor()
     get_sql = """SELECT * FROM fighter WHERE latitude = '0' and longitude = '0';"""
     update_sql = """

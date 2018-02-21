@@ -2,14 +2,20 @@ from bs4 import BeautifulSoup
 from urllib import request
 from geopy.geocoders import Nominatim
 from multiprocessing import Process
+from config_mapper import ConfigParse
 import psycopg2
 import fighter
 
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
 fighters_list = []
 
+# Create a parsed config object referencing your config 
+config = ConfigParse('config.ini')
+database_name = config.ConfigSectionMap('database_info')['database_name']
+database_user = config.ConfigSectionMap('database_info')['username']
+database_pw = config.ConfigSectionMap('database_info')['password']
 # Connect to postgres DB
-conn = psycopg2.connect(dbname='fighters', user='fighters', password='')
+conn = psycopg2.connect(dbname=database_name, user=database_user, password=database_pw)
 cursor = conn.cursor()
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
 sql = """INSERT INTO fighter(name, birthplace, age, height, weight, weight_class, reach, record, latitude, longitude)

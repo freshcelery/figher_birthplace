@@ -1,10 +1,10 @@
+import psycopg2
+import fighter
 from bs4 import BeautifulSoup
 from urllib import request
 from geopy.geocoders import Nominatim
 from multiprocessing import Process
 from config_mapper import ConfigParse
-import psycopg2
-import fighter
 
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
 fighters_list = []
@@ -14,11 +14,13 @@ config = ConfigParse('config.ini')
 database_name = config.ConfigSectionMap('database_info')['database_name']
 database_user = config.ConfigSectionMap('database_info')['username']
 database_pw = config.ConfigSectionMap('database_info')['password']
+table_name = config.ConfigSectionMap('database_info')['table_name']
+
 # Connect to postgres DB
 conn = psycopg2.connect(dbname=database_name, user=database_user, password=database_pw)
 cursor = conn.cursor()
 weight_classes = ['Flyweight', 'Bantamweight', 'Featherweight', 'Lightweight', 'Welterweight', 'Middleweight', 'Light_Heavyweight', 'Heavyweight', 'Women_Strawweight', 'Women_Flyweight', 'Women_Bantamweight', 'Women_Featherweight']
-sql = """INSERT INTO fighter(name, birthplace, age, height, weight, weight_class, reach, record, latitude, longitude)
+sql = """INSERT INTO %s(name, birthplace, age, height, weight, weight_class, reach, record, latitude, longitude)
          VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
          ON CONFLICT ON CONSTRAINT unique_fighter_weight DO UPDATE
          SET birthplace = %s, age = %s, height = %s, reach = %s, record = %s  
@@ -29,7 +31,8 @@ def write_fighter_to_db(conn, cursor, fighter):
     """Insert fighter into database (or update)."""
 
     try:
-        cursor.execute(sql, (fighter.name, fighter.location, fighter.age, fighter.height, fighter.weight, fighter.weight_class, fighter.reach, fighter.record, fighter.lat, fighter.long, fighter.location, fighter.age, fighter.height, fighter.reach, fighter.record))
+        print(fighter.name)
+        cursor.execute(sql % (table_name), (fighter.name, fighter.location, fighter.age, fighter.height, fighter.weight, fighter.weight_class, fighter.reach, fighter.record, fighter.lat, fighter.long, fighter.location, fighter.age, fighter.height, fighter.reach, fighter.record))
         conn.commit()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
@@ -60,6 +63,7 @@ def find_single_fighter(fighter_url, weight_class_in):
     find_fighter_info(fighter_doc_parsed, weight_class)
 
 def find_fighter_info(parsed_fighter_html, weight_class_in):
+    global fighters_list
     """Find info on page and create a fighter object."""
 
     name = parsed_fighter_html.title.text
@@ -95,8 +99,8 @@ def find_fighter_info(parsed_fighter_html, weight_class_in):
         record = parsed_fighter_html.find(id='fighter-skill-record').text.strip()
     except AttributeError:
         record = 'Not Available'
-
-    fighters_list.append(fighter.Fighter(name, location, age, height, weight, weight_class_in, reach, record))
+    new_fighter = fighter.Fighter(name, location, age, height, weight, weight_class_in, reach, record)
+    fighters_list.append(new_fighter)
 
 def get_fighter_process(weight_class):
     base_url = 'http://www.ufc.com//fighter/Weight_Class/filterFighters?weightClass=' + weight_class + '&fighterFilter=Current'
@@ -115,6 +119,7 @@ def get_fighter_process(weight_class):
         find_fighter_page(temp_doc_soup, weight_class)
 
 def main():
+    global fighters_list
     procs = []
 
     for weight_class in weight_classes:
@@ -124,9 +129,13 @@ def main():
 
     for proc in procs:
         proc.join()
-
+    print('Fighters list{}'.format(fighters_list))
+    print("before db write")
     for fighter in fighters_list:
+        print("in db write")
         write_fighter_to_db(conn, cursor, fighter)
+    print("after db write")
+    conn.close()
 
 if __name__ == '__main__':
     main()
